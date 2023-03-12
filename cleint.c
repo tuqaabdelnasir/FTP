@@ -170,11 +170,11 @@ int main()
 			send(server_sd,buffer,sizeof(buffer),0);
 
 			//receive
-			char request_buff[MESSAGE_BUFFER_SIZE];
-			bzero(request_buff,sizeof(request_buff));
-			int rec_bytes = recv(server_sd,request_buff,sizeof(request_buff),0);
+			char request_buffer[256];
+			bzero(request_buffer,sizeof(request_buffer));
+			int rec_bytes = recv(server_sd,request_buffer,sizeof(request_buffer),0);
 			
-			printf("%s\n",request_buff);
+			printf("%s\n",request_buffer);
 		}
 
 		if (strncmp(buffer,"CWD",3)==0){
@@ -182,11 +182,11 @@ int main()
 			send(server_sd,buffer,sizeof(buffer),0);
 			
 			//receive
-			char request_buff[MESSAGE_BUFFER_SIZE];
-			bzero(request_buff,sizeof(request_buff));
-			int rec_bytes = recv(server_sd,request_buff,sizeof(request_buff),0);
+			char request_buffer[256];
+			bzero(request_buffer,sizeof(request_buffer));
+			int rec_bytes = recv(server_sd,request_buffer,sizeof(request_buffer),0);
 			
-			printf("%s\n",request_buff);
+			printf("%s\n",request_buffer);
 		}
 
 
