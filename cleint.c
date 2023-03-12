@@ -144,7 +144,7 @@ int main()
 			send(server_sd,buffer,sizeof(buffer),0);
 			bzero(buffer, sizeof(buffer));
 			//recieve
-			int rec_bytes = recv(server_sd,buffer,sizeof(buffer),0);
+			recv(server_sd,buffer,sizeof(buffer),0);
 			
 			//print
 			printf("%s\n", buffer);
@@ -160,7 +160,7 @@ int main()
 			send(server_sd,buffer,sizeof(buffer),0);
 			bzero(buffer, sizeof(buffer));
 			//recieve
-			int rec_bytes = recv(server_sd,buffer,sizeof(buffer),0);
+			recv(server_sd,buffer,sizeof(buffer),0);
 			
 			printf("%s\n", buffer);
 		}
@@ -172,7 +172,7 @@ int main()
 			//receive
 			char request_buffer[256];
 			bzero(request_buffer,sizeof(request_buffer));
-			int rec_bytes = recv(server_sd,request_buffer,sizeof(request_buffer),0);
+			recv(server_sd,request_buffer,sizeof(request_buffer),0);
 			
 			printf("%s\n",request_buffer);
 		}
@@ -184,7 +184,7 @@ int main()
 			//receive
 			char request_buffer[256];
 			bzero(request_buffer,sizeof(request_buffer));
-			int rec_bytes = recv(server_sd,request_buffer,sizeof(request_buffer),0);
+			recv(server_sd,request_buffer,sizeof(request_buffer),0);
 			
 			printf("%s\n",request_buffer);
 		}
@@ -216,3 +216,4 @@ int main()
 
 	return 0;
 }
+
