@@ -107,12 +107,34 @@ int main()
         if(strncmp(buffer, "STOR", 4)==0 || strncmp(buffer, "RETR", 4)==0 || strncmp(buffer, "LIST", 4)==0)
 		{
 			char* port;
+
 			send(server_sd,"PORT",4,0);
 
-			struct sockaddr_in cliaddr;
-		    bzero(&cliaddr,sizeof(cliaddr));
-		    unsigned int len = sizeof(cliaddr);
-		    char* client_ip = inet_ntoa(cliaddr.sin_addr);
+			//channel on data port to connect to (N+i)
+			int channel;
+			int rec_bytes = recv(server_sd,&channel,sizeof(channel),0);
+			//check if server shutdown
+			if (rec_bytes<=0){
+				printf("Server has shutdown\n");
+				return 0;
+			}
+
+
+
+			//address of where to make data connection
+			//struct sockaddr_in curr_addr;
+			//socklen_t curr_addr_size = sizeof(curr_addr);
+
+			//if (getsockname(server_sd, (struct sockaddr*) &curr_addr, &curr_addr_size) != 0) {
+			//	perror("Socket: ");
+			//	continue;
+			//}
+
+			struct sockaddr_in curr_addr;
+		    bzero(&curr_addr,sizeof(curr_addr));
+		    unsigned int len = sizeof(curr_addr);
+		    int client_port = ntohs(curr_addr.sin_port)+channel;
+		    char* client_ip = inet_ntoa(curr_addr.sin_addr);
 		    
 		    //change dots to commas
 		    int i;
@@ -127,12 +149,48 @@ int main()
 			    }
 			}
 		    // convert port to p1 and p2
-		    char p1 = ntohs(cliaddr.sin_port)/256;
-		    char p2 = ntohs(cliaddr.sin_port)%256;
+		    char p1 = client_port/256;
+		    char p2 = client_port%256;
 		    //concetenate it into client ip
 		    strcat(client_ip,&p1);
 		    strcat(client_ip,&p2);
 		    send(server_sd,client_ip,sizeof(client_ip),0);
+
+
+		    //create socket for data exchange
+			int client_data_sock = socket(AF_INET,SOCK_STREAM,0);
+
+			if (client_data_sock<0)
+			{
+				perror("data sock: ");
+				continue;
+			}
+
+			
+			setsockopt(client_data_sock,SOL_SOCKET,SO_REUSEADDR,&value,sizeof(value)); //&(int){1},sizeof(int)
+			struct sockaddr_in data_addr;
+			bzero(&data_addr,sizeof(data_addr));
+			data_addr.sin_family = AF_INET;
+			data_addr.sin_port = htons(6000);
+			data_addr.sin_addr.s_addr = inet_addr("127.0.0.1"); //INADDR_ANY, INADDR_LOOP
+
+			//connect
+		    if(connect(client_data_sock ,(struct sockaddr*)&data_addr,sizeof(data_addr))<0)
+		    {
+		        perror("connect");
+		        exit(-1);
+		    }
+
+		    //recieve ack of PORT request
+		    recv(server_sd,buffer,sizeof(buffer),0);
+			
+			//socket to connect with server
+			int server_data_sock = accept(client_data_sock, 0, 0);
+
+
+			
+
+			
 
 
 
@@ -216,4 +274,3 @@ int main()
 
 	return 0;
 }
-
