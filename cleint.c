@@ -106,6 +106,22 @@ int main()
 
         if(strncmp(buffer, "STOR", 4)==0 || strncmp(buffer, "RETR", 4)==0 || strncmp(buffer, "LIST", 4)==0)
 		{
+			
+			//check missing filename argument and report
+			if (strncmp(buffer, "STOR", 4)==0 || strncmp(buffer, "RETR", 4)==0){
+				char nf_buff[256];
+				strcpy(nf_buff,buffer);
+				char delim[] = " ";
+				char* no_filename = strtok(nf_buff,delim);
+				no_filename = strtok(NULL,delim);
+
+				if (no_filename==NULL){
+					printf("Please provide a filename\n");
+					continue;
+				}
+			}
+
+
 			char* port;
 
 			send(server_sd,"PORT",4,0);
@@ -118,7 +134,6 @@ int main()
 				printf("Server has shutdown\n");
 				return 0;
 			}
-
 
 
 			//address of where to make data connection
@@ -188,7 +203,44 @@ int main()
 			int server_data_sock = accept(client_data_sock, 0, 0);
 
 
-			
+			if (strncmp(buffer,"LIST",4)==0)
+			{
+				//send LIST on control socket
+				send(server_sd,buffer,sizeof(buffer),0);
+
+				//receive DATA OK
+				char check_data_buff[256];
+				recv(server_data_sock,check_data_buff,sizeof(check_data_buff),0);
+				printf("%s\n",check_data_buff);
+
+				//receive and report the directory file info
+				int size_incoming;
+				char listBuff[256];
+				recv(server_data_sock,&size_incoming,sizeof(int),0);
+				recv(server_data_sock,listBuff,size_incoming,0);
+				printf("%s\n",listBuff);
+				//close data socket upon file transmission
+				close(server_data_sock);
+
+				//receive LIST OK
+				char request_buff[256];
+				bzero(request_buff,sizeof(request_buff));
+				recv(server_sd,request_buff,sizeof(request_buff),0);
+				printf("%s\n",request_buff);
+			}
+
+			//RETR
+
+
+
+
+
+
+
+
+			//STOR
+
+
 
 			
 
