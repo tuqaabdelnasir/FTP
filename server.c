@@ -14,6 +14,7 @@
 #include <sys/types.h>
 #include <fcntl.h>
 #include <dirent.h> 
+#include <stdarg.h>
 
 
 // dirent struct reference https://www.ibm.com/docs/en/zos/2.2.0?topic=functions-readdir-read-entry-from-directory
@@ -41,12 +42,14 @@ struct User userlist[MAX_USERS] = {
 int num_users = 1;
 
 int user(char *username, int client_fd) {
+
     for (int i = 0; i < num_users; i++) {
         if (strcmp(userlist[i].user, username) == 0) {
             userlist[i].is_authenticated = 0; // reset authentication status
             userlist[i].client_fd = client_fd; // save client
             send(client_fd, "331 Username OK, need password.\n", strlen("331 Username OK, need password.\n"), 0);
             return 0;
+            
         }
     }
     send(client_fd, "530 Not logged in.\n", strlen("530 Not logged in.\n"), 0);
@@ -55,10 +58,12 @@ int user(char *username, int client_fd) {
 
 int pass(char *password, int client_fd) {
     for (int i = 0; i < num_users; i++) {
-        if (userlist[i].is_authenticated && userlist[i].client_fd == client_fd) {
+        if (userlist[i].is_authenticated==0 && userlist[i].client_fd == client_fd) {
             if (strcmp(userlist[i].password, password) == 0) {
                 userlist[i].is_authenticated = 1; // authenticated now!
+                if (client_fd > 0) {
                 send(client_fd, "230 User logged in, proceed.\n", strlen("230 User logged in, proceed.\n"), 0);
+                }
                 return 0;
             } else {
                 send(client_fd, "530 Not logged in.\n", strlen("530 Not logged in.\n"), 0);
@@ -66,6 +71,7 @@ int pass(char *password, int client_fd) {
             }
         }
     }
+
     send(client_fd, "503 Login with USER first.\n", strlen("503 Login with USER first.\n"), 0);
     return 0;
 }
@@ -96,7 +102,7 @@ int pwd(char *path, int client_fd){
 
 	else{
 
-	printf("257\"%s\"\n", path);
+	printf("257\"%s\"\n", getcwd(path, sizeof(path)) );
 	return 1;
 
 }
@@ -186,74 +192,86 @@ int retr(int client_fd, char *filename){
 
 // commands from the client, tokenised reference: https://www.tutorialspoint.com/string-tokenisation-function-in-c
 int commands(int client_fd){
-	char data_command[256];
-	int clientr= recv(client_fd, data_command, sizeof(data_command), 0);
 
-	if (clientr < 0) {
-        perror("Error");
-        return 0;
-    }
-     
-    // split between command and data using tokens
-    char *command = strtok((char *)clientr, " ");
-    char *data = strtok(NULL, "\n");
+	 char data_command[1024];
+    int clientr = 0;
 
-    if (command == NULL) {
-        send(client_fd, "500 Syntax error, command unrecognized.\n", strlen("500 Syntax error, command unrecognized.\n"), 0);
-        return 1;
-    }
+    while (1) {
+        memset(data_command, 0, sizeof(data_command));
+        clientr = recv(client_fd, data_command, sizeof(data_command), 0);
 
-    //-----USER(username)-----
-    if (strcmp(command, "USER") == 0) {
-        if (data == NULL) {
-            send(client_fd, "501 Syntax error in parameters or arguments.\n", strlen("501 Syntax error in parameters or arguments.\n"), 0);
-            return 1;
-        }
-        user(data, client_fd);
+		if (clientr < 0) {
+	        perror("Error");
+	        return 0;
+	    }
+	     
+	    // split between command and data using tokens
+	    char *command = strtok(data_command, " ");
+	    char *data = strtok(NULL, "\n");
 
-    //-----PASS(password)-----
-    } else if (strcmp(command, "PASS") == 0) {
-        if (data == NULL) {
-            send(client_fd, "501 Syntax error in parameters or arguments.\n", strlen("501 Syntax error in parameters or arguments.\n"), 0);
-            return 1;
-        }
-        pass(data, client_fd);
-    } else if (strcmp(command, "CWD") == 0) {
-        if (data == NULL) {
-            send(client_fd, "501 Syntax error in parameters or arguments.\n", strlen("501 Syntax error in parameters or arguments.\n"), 0);
-            return 1;
-        }
-        cwd(data, client_fd);
-    } else if (strcmp(command, "PWD") == 0) {
-        if (data != NULL) {
-            send(client_fd, "501 Syntax error in parameters or arguments.\n", strlen("501 Syntax error in parameters or arguments.\n"), 0);
-            return 1;
-        }
-        pwd(data,client_fd);
-    } else if (strcmp(command, "LIST") == 0) {
-        if (data != NULL) {
-            send(client_fd, "501 Syntax error in parameters or arguments.\n", strlen("501 Syntax error in parameters or arguments.\n"), 0);
-            return 1;
-        }
-        list(client_fd);
-    } else if (strcmp(command, "STOR") == 0) {
-        if (data == NULL) {
-            send(client_fd, "501 Syntax error in parameters or arguments.\n", strlen("501 Syntax error in parameters or arguments.\n"), 0);
-            return 1;
-        }
-        stor(client_fd, data);
-    } else if (strcmp(command, "RETR") == 0) {
-        if (data == NULL) {
-            send(client_fd, "501 Syntax error in parameters or arguments.\n", strlen("501 Syntax error in parameters or arguments.\n"), 0);
-            return 1;
-        }
-        retr(client_fd, data);
-    } else {
-        send(client_fd, "500 Syntax error, command unrecognized.\n", strlen("500 Syntax error, command unrecognized.\n"), 0);
-        return 1;
-    }
-   return 0;
+	    if (command == NULL) {
+	        send(client_fd, "500 Syntax error, command unrecognized.\n", strlen("500 Syntax error, command unrecognized.\n"), 0);
+	        return 1;
+	    }
+
+	    //-----USER(username)-----
+	    if (strcmp(command, "USER") == 0) {
+
+	        if (data == NULL) {
+	            send(client_fd, "501 Syntax error in parameters or arguments.\n", strlen("501 Syntax error in parameters or arguments.\n"), 0);
+	            return 1;
+	        }
+	        user(data, client_fd);
+	  
+	    } 
+
+	    //-----PASS(password)-----
+	    else if (strcmp(command, "PASS") == 0) {
+	        if (data == NULL) {
+	            send(client_fd, "501 Syntax error in parameters or arguments.\n", strlen("501 Syntax error in parameters or arguments.\n"), 0);
+	            return 1;
+	        }
+	        pass(data, client_fd);
+
+
+	    } else if (strcmp(command, "CWD") == 0) {
+	        if (data == NULL) {
+	            send(client_fd, "501 Syntax error in parameters or arguments.\n", strlen("501 Syntax error in parameters or arguments.\n"), 0);
+	            return 1;
+	        }
+	        cwd(data, client_fd);
+	    } else if (strcmp(command, "PWD") == 0) {
+	        if (data != NULL) {
+	            send(client_fd, "501 Syntax error in parameters or arguments.\n", strlen("501 Syntax error in parameters or arguments.\n"), 0);
+	            return 1;
+	        }
+	        pwd(data,client_fd);
+	    } 
+
+	    else if (strcmp(command, "LIST") == 0) {
+	        list(client_fd);
+	    } 
+
+	    else if (strcmp(command, "STOR") == 0) {
+	        if (data == NULL) {
+	            send(client_fd, "501 Syntax error in parameters or arguments.\n", strlen("501 Syntax error in parameters or arguments.\n"), 0);
+	            return 1;
+	        }
+	        stor(client_fd, data);
+	    } else if (strcmp(command, "RETR") == 0) {
+	        if (data == NULL) {
+	            send(client_fd, "501 Syntax error in parameters or arguments.\n", strlen("501 Syntax error in parameters or arguments.\n"), 0);
+	            return 1;
+	        }
+	        retr(client_fd, data);
+	    } else {
+	        send(client_fd, "500 Syntax error, command unrecognized.\n", strlen("500 Syntax error, command unrecognized.\n"), 0);
+	        return 1;
+	    }
+	   return 0;
+	} 
 }
+
 
 
 
@@ -273,7 +291,7 @@ int main()
 	struct sockaddr_in server_addr;
 	bzero(&server_addr,sizeof(server_addr));
 	server_addr.sin_family = AF_INET;
-	server_addr.sin_port = htons(5000);
+	server_addr.sin_port = htons(6000);
 	server_addr.sin_addr.s_addr = inet_addr("127.0.0.1"); //INADDR_ANY, INADDR_LOOP
 
 	//bind
@@ -347,7 +365,8 @@ int main()
 				}
 			}
 
-		else{
+			else{
+	
 			commands(fd);
 		}
 
