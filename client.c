@@ -41,7 +41,7 @@ int main()
 	struct sockaddr_in server_addr;
 	bzero(&server_addr,sizeof(server_addr));
 	server_addr.sin_family = AF_INET;
-	server_addr.sin_port = htons(6000);
+	server_addr.sin_port = htons(7000);
 	server_addr.sin_addr.s_addr = inet_addr("127.0.0.1"); //INADDR_ANY, INADDR_LOOP
 
 	//connect
@@ -58,8 +58,8 @@ int main()
 
 	while(1)
 	{
-		recv(server_sd,buffer,sizeof(buffer),0);
-		printf("%s",buffer);
+		//recv(server_sd,buffer,sizeof(buffer),0);
+		//printf("%s",buffer);
 		//tell user to enter a message
 		printf("ftp> ");
 		fgets(buffer,sizeof(buffer),stdin);
@@ -440,7 +440,6 @@ int main()
 				
 				printf("%s\n",request_buffer);
 			}
-
 
 
 	       if(strcmp(buffer,"QUIT")==0)
