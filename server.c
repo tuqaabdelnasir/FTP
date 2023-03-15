@@ -126,20 +126,21 @@ int handle_port(int data_fd) {
     bzero(&data_addr, sizeof(data_addr));
     data_addr.sin_family = AF_INET;
     data_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
-    data_addr.sin_port = htons(7000);
+    data_addr.sin_port = htons(6000);
 
     
     if (bind(data_fd, (struct sockaddr*) &data_addr, sizeof(data_addr)) < 0) {
         perror("bind failed");
 		exit(-1);
 
-    // l
-
-    if (listen(data_fd, 5) < 0) {
-    	perror("listen failed");
-		close(data_fd);
+//parse the details of the client and use that to connect
+    
+    if(connect(data_fd ,(struct sockaddr*)&data_addr,sizeof(data_addr))<0)
+	{
+		perror("connect");
 		exit(-1);
 	}
+
         
     }
 
@@ -147,12 +148,15 @@ int handle_port(int data_fd) {
 
 int list(int client_fd) {
 	int data_fd;
-	handle_port(data_fd);
+	//handle_port(data_fd);
     pid_t pid = fork();
 
-    if (pid == 0) { 
+    if (pid == 0) 
+    { 
+    	handle_port(data_fd);
         DIR *dir = opendir(".");
-        if (dir == NULL) {
+        if (dir == NULL) 
+        {
             char message[256];
             snprintf(message, sizeof(message), "error opening directory\n");
             send(client_fd, message, strlen(message), 0);
@@ -173,13 +177,15 @@ int list(int client_fd) {
         }
         
         closedir(dir);
-        exit(0);
+    }    exit(0);
+
    
 }
 
 
 
-int stor(int client_fd, char *filename){
+int stor(int client_fd, char *filename)
+{
 	int file_transfer = open(filename, O_CREAT | O_WRONLY, 0644);
     if (file_transfer < 0) {
         char message[256];
@@ -211,7 +217,8 @@ int stor(int client_fd, char *filename){
 }
 
 
-int retr(int client_fd, char *filename){
+int retr(int client_fd, char *filename)
+{
 
     int file_transfer = open(filename, O_RDONLY);
     if (file_transfer < 0) {
@@ -243,7 +250,8 @@ int retr(int client_fd, char *filename){
 int client_port;
 // commands from the client, tokenised reference: https://www.tutorialspoint.com/string-tokenisation-function-in-c
 
-int commands(int client_sd){
+int commands(int client_sd)
+{
 
 	char data_command[1024];
     char clientr[256];
@@ -342,7 +350,7 @@ int commands(int client_sd){
 	        return 1;
 	    }
 	   return 0;
-	}
+}
 
 
 
