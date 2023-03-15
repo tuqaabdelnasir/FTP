@@ -206,10 +206,10 @@ int commands(int client_sd){
 
 	char data_command[1024];
     char clientr[256];
-
-        //memset(data_command, 0, sizeof(data_command));
-       	recv(clientr, data_command, sizeof(data_command), 0);
-        printf("%s\n", clientr);
+    while(1){
+        memset(data_command, 0, sizeof(data_command));
+       	recv(client_sd, data_command, sizeof(data_command), 0);
+        //printf("%s\n", clientr);
 
 		if (clientr < 0) {
 	        perror("Error");
@@ -219,6 +219,7 @@ int commands(int client_sd){
 	    // split between command and data using tokens
 	    char *command = strtok(data_command, " ");
 	    char *data = strtok(NULL, "\n");
+	    printf("%s\n", command);
 
 	    if (command == NULL) {
 	        send(client_sd, "500 Syntax error, command unrecognized.\n", strlen("500 Syntax error, command unrecognized.\n"), 0);
@@ -300,6 +301,7 @@ int commands(int client_sd){
 	        return 1;
 	    }
 	   return 0;
+	}
 	} 
 
 
@@ -432,6 +434,8 @@ int main()
 					
 					if(client_sd>max_fd)	
 						max_fd = client_sd;
+
+					commands(client_sd);
 				}
 				else
 				{
@@ -453,7 +457,7 @@ int main()
 								}
 						}
 					}
-					commands(fd);
+					//commands(fd);
 
 				}
 			}
