@@ -111,32 +111,72 @@ int pwd(char *path, int client_fd){
 	return 0;
 }
 
-int list(int client_fd){
+int handle_port(int data_fd) {
+    // Create a socket 
 
-	DIR *dir = opendir(".");
-	if (dir == NULL){
-		char message[256];
-		snprintf(message, sizeof(message), "error opening directory\n");
-		send(client_fd, message, strlen(message), 0);
-	}
+    data_fd = socket(AF_INET, SOCK_STREAM, 0);
 
-	char message[256];  
-    struct dirent* filename;
-  
-    while ((filename = readdir(dir)) != NULL) {
-        if (strcmp(filename->d_name, ".") == 0 || strcmp(filename->d_name, "..") == 0) {
-            continue;  // skip . .. directory --> causes error
-        }
-        char printt[256];
-        snprintf(printt, sizeof(printt), "%s\n", filename->d_name);
-        snprintf(message, sizeof(message), "200 PORT command successful.\n150 File status okay; about to open. data connection.\n%s", printt);
-        send(client_fd, message, strlen(message), 0);
+    if (data_fd < 0) {
+        printf("Error creating data socket\n");
+        return -1;
     }
 
-    // close directory
-    closedir(dir);
-    return 0;
+    // Set up the data connection endpoint
+    struct sockaddr_in data_addr;
+    bzero(&data_addr, sizeof(data_addr));
+    data_addr.sin_family = AF_INET;
+    data_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
+    data_addr.sin_port = htons(7000);
+
+    
+    if (bind(data_fd, (struct sockaddr*) &data_addr, sizeof(data_addr)) < 0) {
+        perror("bind failed");
+		exit(-1);
+
+    // l
+
+    if (listen(data_fd, 5) < 0) {
+    	perror("listen failed");
+		close(data_fd);
+		exit(-1);
+	}
+        
+    }
+
 }
+
+int list(int client_fd) {
+	int data_fd;
+	handle_port(data_fd);
+    pid_t pid = fork();
+
+    if (pid == 0) { 
+        DIR *dir = opendir(".");
+        if (dir == NULL) {
+            char message[256];
+            snprintf(message, sizeof(message), "error opening directory\n");
+            send(client_fd, message, strlen(message), 0);
+            exit(1);
+        }
+
+        char message[256];
+        struct dirent *filename;
+
+        while ((filename = readdir(dir)) != NULL) {
+            if (strcmp(filename->d_name, ".") == 0 || strcmp(filename->d_name, "..") == 0) {
+                continue;  // skip . .. directory --> causes error
+            }
+            char printt[256];
+            snprintf(printt, sizeof(printt), "%s\n", filename->d_name);
+            snprintf(message, sizeof(message), "200 PORT command successful.\n150 File status okay; about to open. data connection.\n%s", printt);
+            send(client_fd, message, strlen(message), 0);
+        }
+        
+        closedir(dir);
+        exit(0);
+   
+}
+
 
 
 int stor(int client_fd, char *filename){
@@ -306,39 +346,7 @@ int commands(int client_sd){
 
 
 
-int handle_port(int client_fd) {
-    // Create a socket 
 
-    int data_fd = socket(AF_INET, SOCK_STREAM, 0);
-
-    if (data_fd < 0) {
-        printf("Error creating data socket\n");
-        return -1;
-    }
-
-    // Set up the data connection endpoint
-    struct sockaddr_in data_addr;
-    bzero(&data_addr, sizeof(data_addr));
-    data_addr.sin_family = AF_INET;
-    data_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
-    data_addr.sin_port = htons(7000);
-
-    
-    if (bind(data_fd, (struct sockaddr*) &data_addr, sizeof(data_addr)) < 0) {
-        perror("bind failed");
-		exit(-1);
-
-    // l
-
-    if (listen(client_fd, 5) < 0) {
-    	perror("listen failed");
-		close(data_fd);
-		exit(-1);
-	}
-        
-    }
-
-}
 
 int main()
 {
