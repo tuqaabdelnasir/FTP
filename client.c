@@ -59,6 +59,7 @@ int main()
 	while(1)
 	{
 		//recv(server_sd,buffer,sizeof(buffer),0);
+		send(server_sd,"Hello",strlen("Hello"),0);
 		//printf("%s",buffer);
 		//tell user to enter a message
 		printf("ftp> ");
@@ -83,8 +84,7 @@ int main()
 			
         }
 
-		
-		if (strncmp(buffer,"PASS",4)==0)
+		else if (strncmp(buffer,"PASS",4)==0)
 		{
 
 			//send
@@ -417,7 +417,7 @@ int main()
 		}
 
 
-			if (strncmp(buffer,"PWD",3)==0){
+			else if (strncmp(buffer,"PWD",3)==0){
 				//send
 				send(server_sd,buffer,sizeof(buffer),0);
 
@@ -429,7 +429,7 @@ int main()
 				printf("%s\n",request_buffer);
 			}
 
-			if (strncmp(buffer,"CWD",3)==0){
+			else if (strncmp(buffer,"CWD",3)==0){
 				//send
 				send(server_sd,buffer,sizeof(buffer),0);
 				
@@ -442,7 +442,7 @@ int main()
 			}
 
 
-	       if(strcmp(buffer,"QUIT")==0)
+	       else if (strcmp(buffer,"QUIT")==0)
 	        {
 
 	        	//printf("closing the connection to server \n");
