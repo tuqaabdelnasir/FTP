@@ -205,10 +205,11 @@ int client_port;
 int commands(int client_sd){
 
 	char data_command[1024];
-    int clientr = 0;
+    char clientr[256];
 
-        memset(data_command, 0, sizeof(data_command));
-        clientr = recv(client_sd, data_command, sizeof(data_command), 0);
+        //memset(data_command, 0, sizeof(data_command));
+       	recv(clientr, data_command, sizeof(data_command), 0);
+        printf("%s\n", clientr);
 
 		if (clientr < 0) {
 	        perror("Error");
@@ -425,7 +426,7 @@ int main()
 				if(fd==server_sd)
 				{
 					int client_sd = accept(server_sd,0,0);
-					send(client_sd, "220 Service ready for new user.\n", strlen("220 Service ready for new user.\n"), 0);
+					//send(client_sd, "220 Service ready for new user.\n", strlen("220 Service ready for new user.\n"), 0);
 					printf("Client Connected fd = %d \n",client_sd);
 					FD_SET(client_sd,&full_fdset);
 					
@@ -452,13 +453,14 @@ int main()
 								}
 						}
 					}
+					commands(fd);
 
 				}
 			}
 
 			else{
 	
-			commands(fd);
+			//commands(fd);
 		}
 
 
