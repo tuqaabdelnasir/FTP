@@ -134,6 +134,7 @@ int handle_port(int data_fd) {
 		exit(-1);
 
 //parse the details of the client and use that to connect
+
     
     if(connect(data_fd ,(struct sockaddr*)&data_addr,sizeof(data_addr))<0)
 	{
@@ -268,7 +269,7 @@ int commands(int client_sd)
 	    // split between command and data using tokens
 	    char *command = strtok(data_command, " ");
 	    char *data = strtok(NULL, "\n");
-	    printf("%s\n", command);
+	    printf("%s\n", data_command);
 
 	    if (command == NULL) {
 	        send(client_sd, "500 Syntax error, command unrecognized.\n", strlen("500 Syntax error, command unrecognized.\n"), 0);
