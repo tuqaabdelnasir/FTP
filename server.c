@@ -111,20 +111,14 @@ int pwd(char *path, int client_fd){
 	return 0;
 }
 
-int handle_port(int data_fd) {
+int handle_port(int data_fd, char data_command[]) {
     // Create a socket 
 
-    char buffer[1024];
-    memset(buffer, 0, sizeof(buffer));
-    
-    // Receive the PORT command from the client
-    if (recv(data_fd, buffer, sizeof(buffer), 0) < 0) {
-        printf("Error receiving data\n");
-        return -1;
-    }
+
+    printf("%s", "HELLO");
     
     // Parse the PORT command
-    char* h1= strtok(buffer, ",");
+    char* h1= strtok(data_command, ",");
     char* h2= strtok(NULL, ",");
     char* h3= strtok(NULL, ",");
     char* h4= strtok(NULL, ",");
@@ -146,6 +140,7 @@ int handle_port(int data_fd) {
     data_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
 
     int port = atoi(p1) * 256 + atoi(p2);
+    
     data_addr.sin_port = htons(port);
 
     
@@ -170,14 +165,16 @@ int handle_port(int data_fd) {
 
 
 
-int list(int client_fd) {
+int list(int client_fd, char data_command[] ){
 	int data_fd;
 	//handle_port(data_fd);
-    pid_t pid = fork();
+    int pid = fork();
+
+    printf("hello");
 
     if (pid == 0) 
     { 
-    	handle_port(data_fd);
+    	handle_port(data_fd, data_command);
         DIR *dir = opendir(".");
         if (dir == NULL) 
         {
@@ -292,6 +289,7 @@ int commands(int client_sd)
 	    // split between command and data using tokens
 	    char *command = strtok(data_command, " ");
 	    char *data = strtok(NULL, "\n");
+	    
 	    printf("%s\n", data_command);
 
 	    if (command == NULL) {
@@ -333,8 +331,11 @@ int commands(int client_sd)
 	        pwd(data,client_sd);
 	    } 
 
-	    else if (strcmp(command, "LIST\r\n") == 0) {
-	        list(client_sd);
+	    else if (strcmp(command, "LIST") == 0) {
+
+	    	printf("hello");
+
+	        list(client_sd, data_command);
 	    } 
 
 	    else if (strcmp(command, "STOR") == 0) {
