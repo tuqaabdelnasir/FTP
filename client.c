@@ -168,24 +168,45 @@ int main()
 
 				char* port;
 				char port_req[256];
+				char port_ack[256];
 				send(server_sd,"PORT",4,0);
-
-				
 				int channel=1;
-				//int rec_bytes = recv(server_sd,&channel,sizeof(channel),0);
+				bzero(port_ack,sizeof(port_ack));
+				recv(server_sd,port_ack,sizeof(port_ack),0);
+				printf("%s\n", port_ack);
 				
 				//if (rec_bytes<=0)
 				//{
 				//	printf("Server has shutdown\n");
 					//return 0;
 				//}
-
+				int client_data_sock = socket(AF_INET,SOCK_STREAM,0);
+				if (client_data_sock<0)
+				{
+					perror("data sock: ");
+					continue;
+				}
 				struct sockaddr_in curr_addr;
 			    bzero(&curr_addr,sizeof(curr_addr));
 			    unsigned int len = sizeof(curr_addr);
 			    getsockname(server_sd,(struct sockaddr*)&curr_addr,&len);
+
 			    int client_port = (int)ntohs(curr_addr.sin_port)+channel++;
 			    char* client_ip = inet_ntoa(curr_addr.sin_addr);
+
+			    //binddddddd
+			    if (bind(client_data_sock, (struct sockaddr *)&curr_addr, &len) < 0)
+				 {
+                	perror("bind");
+                	continue;
+                }
+
+                if (listen(client_data_sock, 5) < 0)
+	            {
+	                perror("listen");
+	                close(client_data_sock);
+					continue;
+	            }
 			    
 			    //change dots to commas
 			    int i;
@@ -204,22 +225,26 @@ int main()
 			    int p1 = client_port/256;
 			    int p2 = client_port%256;
 			    //concetenate it into client ip
-			    //SENDS THE PORT THING HEREEE
+
+			    printf("cuur add sinport %d\n",curr_addr.sin_port);
+			    printf("channel %d\n",channel);
+			    printf("client port %d\n",client_port);
+			    printf("hiiii %d\n",p1);
+			    printf("byeee %d\n",p2);
+
+			    //SENDS THE PORT THING HEREE
 			    
 			    sprintf(port_req,"%s,%d,%d",client_ip,p1,p2);
 
 			    send(server_sd,port_req,sizeof(port_req),0);
 
+			    //bind to the client details then listen (declare the variables and everything)
 
 			    //create socket for data exchange
-				int client_data_sock = socket(AF_INET,SOCK_STREAM,0);
-				if (client_data_sock<0)
-				{
-					perror("data sock: ");
-					continue;
-				}
+				
 				
 				setsockopt(client_data_sock,SOL_SOCKET,SO_REUSEADDR,&value,sizeof(value)); //&(int){1},sizeof(int)
+				//server details then bind then accept(using the server details)
 				struct sockaddr_in data_addr;
 				bzero(&data_addr,sizeof(data_addr));
 				data_addr.sin_family = AF_INET;
@@ -235,27 +260,28 @@ int main()
                 	continue;
                 }
 				//listen on the data exchange socket
-	            if (listen(client_data_sock, 5) < 0)
-	            {
-	                perror("listen");
-	                close(client_data_sock);
-					continue;
-	            }
+	            //if (listen(client_data_sock, 5) < 0)
+	            //{
+	                //perror("listen");
+	                //close(client_data_sock);
+					//continue;
+	            //}
 
 			    //recieve ack of PORT request
 			    recv(server_sd,buffer,sizeof(buffer),0);
 
 			    //server details here
-				 	struct sockaddr_in server_data_addr;
-				    bzero(&server_data_addr, sizeof(server_data_addr));
-				    server_data_addr.sin_family = AF_INET;
-				    server_data_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
-				    server_data_addr.sin_port = htons(6000);
-				    unsigned int server_len = sizeof(server_data_addr);
+			    // dont need this
+				//  	struct sockaddr_in server_data_addr;
+				//     bzero(&server_data_addr, sizeof(server_data_addr));
+				//     server_data_addr.sin_family = AF_INET;
+				//     server_data_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
+				//     server_data_addr.sin_port = htons(6000);
+				//     unsigned int server_len = sizeof(server_data_addr);
 
 
 				//saccept here with the server address
-				int server_data_sock = accept(client_data_sock, (struct sockaddr *)&server_data_addr, &server_data_addr);
+				int server_data_sock = accept(client_data_sock, (struct sockaddr *)&data_addr, &s_length);
 
 				//fork here
 				int p_id=fork();
@@ -264,6 +290,7 @@ int main()
 				
 					if (strncmp(buffer,"LIST",4)==0)
 					{
+						printf("%s\n","Sleepp" );
 						//send LIST on control socket
 						send(server_sd,buffer,sizeof(buffer),0);
 
