@@ -76,11 +76,7 @@ int main()
 			
 			//print
 			printf("%s\n", buffer);
-			if (strncmp(buffer,"331",3)!=0)
-			{	
-				strncpy(log_in, "no", 3);
-
-			}
+			
 			
         }
 
@@ -94,17 +90,12 @@ int main()
 			recv(server_sd,buffer,sizeof(buffer),0);
 			
 			printf("%s\n", buffer);
-			if (strncmp(buffer,"230",3)!=0)
-			{	
-				strncpy(log_in, "no", 3);
-
-			}
+			
 			
 		}
        	
 
-		while (strncmp(log_in,"yes",3)==0)
-		{
+
 			if(strcmp(buffer,"!LIST")==0)
 	        {
 
@@ -463,9 +454,7 @@ int main()
 	        printf("Recieved message: %s \n",buffer);
 
 		}
-	}
 
-		printf("You are not signed in!");
 	
 
        
