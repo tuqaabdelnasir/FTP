@@ -134,7 +134,8 @@ int handle_port(int data_fd) {
 		exit(-1);
 
 //parse the details of the client and use that to connect
-
+	// convert p1 and p2 to port
+      //port = (p1 * 256) + p2
     
     if(connect(data_fd ,(struct sockaddr*)&data_addr,sizeof(data_addr))<0)
 	{
