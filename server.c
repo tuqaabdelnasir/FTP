@@ -111,57 +111,70 @@ int pwd(char *path, int client_fd){
 	return 0;
 }
 
-int handle_port(int data_fd, char data_command[]) {
-    // Create a socket 
+int handle_port(char d[]) 
+{
+    // Create a socket
+    int data_fd = socket(AF_INET, SOCK_STREAM, 0);
 
-
-    printf("%s", "HELLO");
-    
-    // Parse the PORT command
-    char* h1= strtok(data_command, ",");
-    char* h2= strtok(NULL, ",");
-    char* h3= strtok(NULL, ",");
-    char* h4= strtok(NULL, ",");
-    char* p1= strtok(NULL, ",");
-    char* p2= strtok(NULL, "\r\n"); // last one
-
-
-    data_fd = socket(AF_INET, SOCK_STREAM, 0);
-
-    if (data_fd < 0) {
+    if (data_fd < 0) 
+    {
         printf("Error creating data socket\n");
         return -1;
     }
+				
+	struct sockaddr_in server_data_addr;
+	bzero(&server_data_addr, sizeof(server_data_addr));
+	server_data_addr.sin_family = AF_INET;
+	server_data_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
+	server_data_addr.sin_port = htons(6000);
+	unsigned int server_len = sizeof(server_data_addr);
 
-    // Set up the data connection endpoint
-    struct sockaddr_in data_addr;
-    bzero(&data_addr, sizeof(data_addr));
-    data_addr.sin_family = AF_INET;
-    data_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
-
-    int port = atoi(p1) * 256 + atoi(p2);
-    
-    data_addr.sin_port = htons(port);
-
-    
-    if (bind(data_fd, (struct sockaddr*) &data_addr, sizeof(data_addr)) < 0) {
+	if (bind(data_fd, (struct sockaddr*) &server_data_addr, sizeof(server_data_addr)) < 0) 
+	{
         perror("bind failed");
 		exit(-1);
 
 	}
 
+    // Parse the PORT command
+    char* h1= strtok(d, ",");
+    char* h2= strtok(NULL, ",");
+    char* h3= strtok(NULL, ",");
+    char* h4= strtok(NULL, ",");
+    char* p1= strtok(NULL, ",");
+    char* p2= strtok(NULL, "\r\n"); // last one
+    
+
+
+    struct sockaddr_in client_data_addr;
+	bzero(&client_data_addr, sizeof(client_data_addr));
+	client_data_addr.sin_family = AF_INET;
+	client_data_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
+	int port = atoi(p1) * 256 + atoi(p2);
+    client_data_addr.sin_port = htons(port);
+	//client_data_addr.sin_port = htons(6000);
+	unsigned int client_len = sizeof(client_data_addr);
+    //declare client stuff before connect
+
+    //int port = atoi(p1) * 256 + atoi(p2);
+    
+    //data_addr.sin_port = htons(port);
+
+    
+
 //parse the details of the client and use that to connect
 	// convert p1 and p2 to port
       //port = (p1 * 256) + p2
+	//unsigned int len = sizeof(data_addr);
     
-    if(connect(data_fd ,(struct sockaddr*)&data_addr,sizeof(data_addr))<0)
+    if(connect(data_fd ,(struct sockaddr*)&client_data_addr,&client_len)<0)
 	{
 		perror("connect");
 		exit(-1);
 	}
 
         
-    }
+}
 
 
 
@@ -174,7 +187,7 @@ int list(int client_fd, char data_command[] ){
 
     if (pid == 0) 
     { 
-    	handle_port(data_fd, data_command);
+    	handle_port(data_command);
         DIR *dir = opendir(".");
         if (dir == NULL) 
         {
@@ -334,8 +347,14 @@ int commands(int client_sd)
 	    else if (strcmp(command, "LIST") == 0) {
 
 	    	printf("hello");
-
 	        list(client_sd, data_command);
+	    } 
+	    else if (strcmp(command, "PORT") == 0) {
+	    	printf("roarrr\n");
+	    	send(client_sd, "200 PORT command recieved.\n", strlen("200 PORT command recieved.\n"), 0);
+	    	recv(client_sd, data_command, sizeof(data_command), 0);
+	    	printf("%s\n",data_command);
+	        handle_port(data_command);
 	    } 
 
 	    else if (strcmp(command, "STOR") == 0) {
