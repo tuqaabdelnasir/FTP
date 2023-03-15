@@ -114,6 +114,24 @@ int pwd(char *path, int client_fd){
 int handle_port(int data_fd) {
     // Create a socket 
 
+    char buffer[1024];
+    memset(buffer, 0, sizeof(buffer));
+    
+    // Receive the PORT command from the client
+    if (recv(data_fd, buffer, sizeof(buffer), 0) < 0) {
+        printf("Error receiving data\n");
+        return -1;
+    }
+    
+    // Parse the PORT command
+    char* h1= strtok(buffer, ",");
+    char* h2= strtok(NULL, ",");
+    char* h3= strtok(NULL, ",");
+    char* h4= strtok(NULL, ",");
+    char* p1= strtok(NULL, ",");
+    char* p2= strtok(NULL, "\r\n"); // last one
+
+
     data_fd = socket(AF_INET, SOCK_STREAM, 0);
 
     if (data_fd < 0) {
@@ -126,12 +144,16 @@ int handle_port(int data_fd) {
     bzero(&data_addr, sizeof(data_addr));
     data_addr.sin_family = AF_INET;
     data_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
-    data_addr.sin_port = htons(6000);
+
+    int port = atoi(p1) * 256 + atoi(p2);
+    data_addr.sin_port = htons(port);
 
     
     if (bind(data_fd, (struct sockaddr*) &data_addr, sizeof(data_addr)) < 0) {
         perror("bind failed");
 		exit(-1);
+
+	}
 
 //parse the details of the client and use that to connect
 	// convert p1 and p2 to port
@@ -146,7 +168,7 @@ int handle_port(int data_fd) {
         
     }
 
-}
+
 
 int list(int client_fd) {
 	int data_fd;
@@ -333,19 +355,6 @@ int commands(int client_sd)
 	            //close(client_sd);
 	            return 1;
 	    
-
-		} else if (strcmp(command, "QUIT\r\n") == 0) {
-	            char* h1= strtok(data, ",");
-	            char* h2= strtok(NULL, ",");
-	            char* h3= strtok(NULL, ",");
-	            char* h4= strtok(NULL, ",");
-	            char* p1= strtok(NULL, ",");
-	            char* p2= strtok(NULL, "\n"); // last one
-
-	            send(client_sd, "200 PORT command successful.\n", strlen("200 PORT command successful.\n"), 0);
-	        return 1;
-
-
 	    
 	    } else {
 	        send(client_sd, "500 Syntax error, command unrecognized.\n", strlen("500 Syntax error, command unrecognized.\n"), 0);
