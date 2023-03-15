@@ -202,11 +202,12 @@ int retr(int client_fd, char *filename){
 
 int client_port;
 // commands from the client, tokenised reference: https://www.tutorialspoint.com/string-tokenisation-function-in-c
+
 int commands(int client_sd){
 
 	char data_command[1024];
     char clientr[256];
-    while(1){
+    //while(1){
         memset(data_command, 0, sizeof(data_command));
        	recv(client_sd, data_command, sizeof(data_command), 0);
         //printf("%s\n", clientr);
@@ -302,7 +303,6 @@ int commands(int client_sd){
 	    }
 	   return 0;
 	}
-	} 
 
 
 
@@ -435,29 +435,30 @@ int main()
 					if(client_sd>max_fd)	
 						max_fd = client_sd;
 
-					commands(client_sd);
+					//commands(client_sd);
 				}
 				else
 				{
-					char buffer[256];
-					bzero(buffer,sizeof(buffer));
-					int bytes = recv(fd,buffer,sizeof(buffer),0);
-					if(bytes==0)   //client has closed the connection
-					{
-						printf("connection closed from client side \n");
-						close(fd);
-						FD_CLR(fd,&full_fdset);
-						if(fd==max_fd)
-						{
-							for(int i=max_fd; i>=3; i--)
-								if(FD_ISSET(i,&full_fdset))
-								{
-									max_fd =  i;
-									break;
-								}
-						}
-					}
-					//commands(fd);
+					commands(fd);
+					// char buffer[256];
+					// bzero(buffer,sizeof(buffer));
+					// int bytes = recv(fd,buffer,sizeof(buffer),0);
+					// if(bytes==0)   //client has closed the connection
+					// {
+					// 	printf("connection closed from client side \n");
+					// 	close(fd);
+					// 	FD_CLR(fd,&full_fdset);
+					// 	if(fd==max_fd)
+					// 	{
+					// 		for(int i=max_fd; i>=3; i--)
+					// 			if(FD_ISSET(i,&full_fdset))
+					// 			{
+					// 				max_fd =  i;
+					// 				break;
+					// 			}
+					// 	}
+					// }
+					
 
 				}
 			}
