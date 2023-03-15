@@ -167,24 +167,24 @@ int main()
 
 
 				char* port;
-				char* port_req[256];
+				char port_req[256];
 				send(server_sd,"PORT",4,0);
 
 				
-				int channel;
-				int rec_bytes = recv(server_sd,&channel,sizeof(channel),0);
+				int channel=1;
+				//int rec_bytes = recv(server_sd,&channel,sizeof(channel),0);
 				
-				if (rec_bytes<=0)
-				{
-					printf("Server has shutdown\n");
-					return 0;
-				}
-
+				//if (rec_bytes<=0)
+				//{
+				//	printf("Server has shutdown\n");
+					//return 0;
+				//}
 
 				struct sockaddr_in curr_addr;
 			    bzero(&curr_addr,sizeof(curr_addr));
 			    unsigned int len = sizeof(curr_addr);
-			    int client_port = (int) ntohs(curr_addr.sin_port)+channel;
+			    getsockname(server_sd,(struct sockaddr*)&curr_addr,&len);
+			    int client_port = (int)ntohs(curr_addr.sin_port)+channel++;
 			    char* client_ip = inet_ntoa(curr_addr.sin_addr);
 			    
 			    //change dots to commas
@@ -204,7 +204,9 @@ int main()
 			    int p1 = client_port/256;
 			    int p2 = client_port%256;
 			    //concetenate it into client ip
-			    sprintf(port_req,"%s, %d, %d",client_ip,p1,p2);
+			    //SENDS THE PORT THING HEREEE
+			    
+			    sprintf(port_req,"%s,%d,%d",client_ip,p1,p2);
 
 			    send(server_sd,port_req,sizeof(port_req),0);
 
@@ -249,9 +251,11 @@ int main()
 				    server_data_addr.sin_family = AF_INET;
 				    server_data_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
 				    server_data_addr.sin_port = htons(6000);
+				    unsigned int server_len = sizeof(server_data_addr);
+
 
 				//saccept here with the server address
-				int server_data_sock = accept(client_data_sock, (struct sockaddress *)&server_data_addr, sizeof(server_data_addr));
+				int server_data_sock = accept(client_data_sock, (struct sockaddr *)&server_data_addr, &server_data_addr);
 
 				//fork here
 				int p_id=fork();
@@ -495,4 +499,3 @@ int main()
 
 	return 0;
 }
-
