@@ -127,7 +127,7 @@ int main()
 	    else if(strncmp(buffer, "STOR", 4)==0 || strncmp(buffer, "RETR", 4)==0 || strncmp(buffer, "LIST", 4)==0)
 		{		
 				
-				
+				//printf("hllo");
 				//if statement incase STOR RETR doesn't have an argument
 				if (strncmp(buffer, "STOR", 4)==0 || strncmp(buffer, "RETR", 4)==0)
 				{
@@ -145,6 +145,7 @@ int main()
 				}
 
 				//fork here
+				int state;
 				int p_id=fork();
 				if (p_id==0)
 				{
@@ -157,7 +158,7 @@ int main()
 					int channel=1;
 					bzero(port_ack,sizeof(port_ack));
 					//recv ack that it is recieved
-					//recv(server_sd,port_ack,sizeof(port_ack),0);
+					recv(server_sd,port_ack,sizeof(port_ack),0);
 					//printf("%s\n", port_ack);
 					
 					//create the data socket
@@ -176,6 +177,8 @@ int main()
 				    getsockname(server_sd,(struct sockaddr*)&curr_addr,&len);
 				    int client_port = (int)ntohs(curr_addr.sin_port)+(channel++);
 				    char* client_ip = inet_ntoa(curr_addr.sin_addr);
+
+
 				
 
 				    //bind to data socket
@@ -194,7 +197,12 @@ int main()
 						continue;
 		            }
 
-				    
+		            if (send(server_sd, "port ok\n", strlen("port ok\n"),0)<0){
+		            	perror("send");
+		            	exit(-1);
+		            }
+
+				    //printf("%s\n",buffer);
 				    //change dots to commas
 				    int i;
 					int length = strlen(client_ip);
@@ -212,7 +220,7 @@ int main()
 				    //concetenate it into client ip
 				    sprintf(port_req,"%s,%d,%d",client_ip,p1,p2);
 				    //send it to the server
-				    send(server_sd,port_req,sizeof(port_req),0);
+				    //send(server_sd,port_req,sizeof(port_req),0);
 
 					//SERVER DETAiLS
 					struct sockaddr_in data_addr;
@@ -225,12 +233,14 @@ int main()
 
 					//saccept here with the server address
 					int server_data_sock = accept(client_data_sock, (struct sockaddr *)&data_addr, &s_length);
-					int check=recv(server_sd,buffer,sizeof(buffer),0);
-					if (strncmp(buffer,"PORT",4)==0){
+					//int check=recv(server_sd,port_ack,sizeof(port_ack),0);
+
 
 
 
 					//if command is LIST
+					printf("%s\n",buffer);
+					printf("hi!");
 					if (strncmp(buffer,"LIST",4)==0)
 					{	
 						printf("ack?\n");
@@ -403,6 +413,12 @@ int main()
 						printf("%s\n",request_buffer);
 
 					}
+				
+				else{
+					wait(&state);
+					bzero(port_ack, sizeof(port_ack));
+					int receive = recv(server_sd, port_ack, sizeof(port_ack), 0);
+
 				}
 				}
 
