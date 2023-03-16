@@ -204,47 +204,52 @@ printf(" ");
 
 
 int list(int client_fd, char data_command[] ){
-	int data_fd;
-	//handle_port(data_fd);
-    int pid = fork();
 
-    printf("hello");
 
-    if (pid == 0) 
-    { 	
-    	handle_port(data_command);
-        DIR *dir = opendir(".");
-        if (dir == NULL) 
-        {
-            char message[256];
-            snprintf(message, sizeof(message), "error opening directory\n");
-            send(client_fd, message, strlen(message), 0);
-            exit(1);
-        }
 
-        char message[256];
-        struct dirent *filename;
+			int data_fd;
+			//handle_port(data_fd);
+		    int pid = fork();
 
-        while ((filename = readdir(dir)) != NULL) {
-            if (strcmp(filename->d_name, ".") == 0 || strcmp(filename->d_name, "..") == 0) {
-                continue;  // skip . .. directory --> causes error
-            }
-            char printt[256];
-            snprintf(printt, sizeof(printt), "%s\n", filename->d_name);
-            snprintf(message, sizeof(message), "200 PORT command successful.\n150 File status okay; about to open. data connection.\n%s", printt);
-            send(client_fd, message, strlen(message), 0);
-        }
-        
-        closedir(dir);
-    }    exit(0);
+		    printf("hello");
 
-   
-}
+		    if (pid == 0) 
+		    { 	
+		    	handle_port(data_command);
+		        DIR *dir = opendir(".");
+		        if (dir == NULL) 
+		        {
+		            char message[256];
+		            snprintf(message, sizeof(message), "error opening directory\n");
+		            send(client_fd, message, strlen(message), 0);
+		            exit(1);
+		        }
+
+		        char message[256];
+		        struct dirent *filename;
+
+		        while ((filename = readdir(dir)) != NULL) {
+		            if (strcmp(filename->d_name, ".") == 0 || strcmp(filename->d_name, "..") == 0) {
+		                continue;  // skip . .. directory --> causes error
+		            }
+		            char printt[256];
+		            snprintf(printt, sizeof(printt), "%s\n", filename->d_name);
+		            snprintf(message, sizeof(message), "200 PORT command successful.\n150 File status okay; about to open. data connection.\n%s", printt);
+		            send(client_fd, message, strlen(message), 0);
+		        }
+		        
+		        closedir(dir);
+		    }    exit(0);
+
+		}
 
 
 
 int stor(int client_fd, char *filename)
 {
+    
+
+
     int data_fd;
     int pid = fork();
 
@@ -290,6 +295,8 @@ int stor(int client_fd, char *filename)
     send(client_fd, message, strlen(message), 0);
     return 0;
 }
+
+
 
 
 int retr(int client_fd, char *filename)
@@ -405,16 +412,25 @@ int commands(int client_sd)
 	        pwd(data,client_sd);
 	    } 
 
-	    else if (strcmp(command, "LIST") == 0) {
-
-	    	printf("hello");
-	        list(client_sd, data_command);
+	    else if (strcmp(command, "LIST") == 0) {			  
+			        	list(client_sd, data_command);
 	    } 
+
 	    else if (strcmp(command, "PORT") == 0) {
-	    	send(client_sd, "200 PORT command recieved.\n", strlen("200 PORT command recieved.\n"), 0);
-	    	recv(client_sd, data_command, sizeof(data_command), 0);
-	    	printf("%s\n",data_command);
-	        handle_port(data_command);
+	    	printf("hello");
+
+	    	for (int i = 0; i < num_users; i++) {
+	    		if (strcmp(userlist[i].is_authenticated, 1) == 0) {
+			    
+			    	send(client_sd, "200 PORT command recieved.\n", strlen("200 PORT command recieved.\n"), 0);
+			    	recv(client_sd, data_command, sizeof(data_command), 0);
+			    	printf("%s\n",data_command);
+			        handle_port(data_command);
+			    }
+			        else{
+			        	send(client_sd, "530 Not logged in.", strlen("530 Not logged in."), 0);}
+			   }
+
 	    } 
 
 	    else if (strcmp(command, "STOR") == 0) {
@@ -423,6 +439,7 @@ int commands(int client_sd)
 	            return 1;
 	        }
 	        stor(client_sd, data);
+
 	    } else if (strcmp(command, "RETR") == 0) {
 	        if (data == NULL) {
 	            send(client_sd, "501 Syntax error in parameters or arguments.\n", strlen("501 Syntax error in parameters or arguments.\n"), 0);
