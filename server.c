@@ -113,6 +113,7 @@ int pwd(char *path, int client_fd){
 
 int handle_port(char* d) 
 {
+
     // Create a socket
     int data_fd = socket(AF_INET, SOCK_STREAM, 0);
 
@@ -121,6 +122,7 @@ int handle_port(char* d)
         printf("Error creating data socket\n");
         return -1;
     }
+
 				
 	struct sockaddr_in server_data_addr;
 	bzero(&server_data_addr, sizeof(server_data_addr));
@@ -203,16 +205,16 @@ printf(" ");
 
 
 
-int list(int client_fd, char data_command[] ){
-
-
+int list(int client_fd){
 
 			int data_fd;
 			//handle_port(data_fd);
 		    int pid = fork();
+		    char data_command[256];
 
 		    printf("hello");
-
+		    send(client_fd, "PORT OK", strlen("PORT OK"), 0);
+		    recv(client_fd, data_command, sizeof(data_command), 0);
 		    if (pid == 0) 
 		    { 	
 		    	handle_port(data_command);
@@ -412,26 +414,29 @@ int commands(int client_sd)
 	        pwd(data,client_sd);
 	    } 
 
-	    else if (strcmp(command, "LIST") == 0) {			  
-			        	list(client_sd, data_command);
+	    else if (strcmp(command, "LIST") == 0) 
+	    {	
+	    	//recv(client_sd, clientr, sizeof(clientr), 0);
+	    	//send(client_sd, "ack\n", strlen("ack\n"), 0);	
+			list(client_sd);
 	    } 
 
-	    else if (strcmp(command, "PORT") == 0) {
-	    	printf("hello");
+	    // else if (strcmp(command, "PORT") == 0) {
+	    // 	printf("hello");
 
-	    	for (int i = 0; i < num_users; i++) {
-	    		if (strcmp(userlist[i].is_authenticated, 1) == 0) {
+	    // 	for (int i = 0; i < num_users; i++) {
+	    // 		if (strcmp(userlist[i].is_authenticated, 1) == 0) {
 			    
-			    	send(client_sd, "200 PORT command recieved.\n", strlen("200 PORT command recieved.\n"), 0);
-			    	recv(client_sd, data_command, sizeof(data_command), 0);
-			    	printf("%s\n",data_command);
-			        handle_port(data_command);
-			    }
-			        else{
-			        	send(client_sd, "530 Not logged in.", strlen("530 Not logged in."), 0);}
-			   }
+		// 	    	send(client_sd, "200 PORT command recieved.\n", strlen("200 PORT command recieved.\n"), 0);
+		// 	    	recv(client_sd, data_command, sizeof(data_command), 0);
+		// 	    	printf("%s\n",data_command);
+		// 	        handle_port(data_command);
+		// 	    }
+		// 	        else{
+		// 	        	send(client_sd, "530 Not logged in.", strlen("530 Not logged in."), 0);}
+		// 	   }
 
-	    } 
+	    // } 
 
 	    else if (strcmp(command, "STOR") == 0) {
 	        if (data == NULL) {
