@@ -125,7 +125,8 @@ int main()
 
 	    //if STOR RETR LIST are used
 	    else if(strncmp(buffer, "STOR", 4)==0 || strncmp(buffer, "RETR", 4)==0 || strncmp(buffer, "LIST", 4)==0)
-		{
+		{		
+				
 				
 				//if statement incase STOR RETR doesn't have an argument
 				if (strncmp(buffer, "STOR", 4)==0 || strncmp(buffer, "RETR", 4)==0)
@@ -143,7 +144,6 @@ int main()
 					}
 				}
 
-
 				//fork here
 				int p_id=fork();
 				if (p_id==0)
@@ -153,12 +153,12 @@ int main()
 					char port_req[256];
 					char port_ack[256];
 					//send PORT command
-					send(server_sd,"PORT",4,0);
+					//send(server_sd,"PORT",4,0);
 					int channel=1;
 					bzero(port_ack,sizeof(port_ack));
 					//recv ack that it is recieved
-					recv(server_sd,port_ack,sizeof(port_ack),0);
-					printf("%s\n", port_ack);
+					//recv(server_sd,port_ack,sizeof(port_ack),0);
+					//printf("%s\n", port_ack);
 					
 					//create the data socket
 					int client_data_sock = socket(AF_INET,SOCK_STREAM,0);
@@ -209,7 +209,6 @@ int main()
 				    // convert port to p1 and p2
 				    int p1 = client_port/256;
 				    int p2 = client_port%256;
-				    
 				    //concetenate it into client ip
 				    sprintf(port_req,"%s,%d,%d",client_ip,p1,p2);
 				    //send it to the server
@@ -226,15 +225,19 @@ int main()
 
 					//saccept here with the server address
 					int server_data_sock = accept(client_data_sock, (struct sockaddr *)&data_addr, &s_length);
+					int check=recv(server_sd,buffer,sizeof(buffer),0);
+					if (strncmp(buffer,"PORT",4)==0){
+
 
 
 					//if command is LIST
 					if (strncmp(buffer,"LIST",4)==0)
-					{
+					{	
+						printf("ack?\n");
 						
 						//send LIST on control socket
 						recv(server_sd,buffer,sizeof(buffer),0);
-
+						printf("is this\n");
 						send(server_sd,buffer,sizeof(buffer),0);
 
 						//receive DATA OK
@@ -400,6 +403,7 @@ int main()
 						printf("%s\n",request_buffer);
 
 					}
+				}
 				}
 
 
