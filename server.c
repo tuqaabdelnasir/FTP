@@ -111,7 +111,7 @@ int pwd(char *path, int client_fd){
 	return 0;
 }
 
-int handle_port(char d[]) 
+int handle_port(char* d) 
 {
     // Create a socket
     int data_fd = socket(AF_INET, SOCK_STREAM, 0);
@@ -136,16 +136,34 @@ int handle_port(char d[])
 
 	}
 
-    // Parse the PORT command
-    char* c= strtok(d, ",");
-    char* h1= strtok(NULL, ",");
-    char* h2= strtok(NULL, ",");
-    char* h3= strtok(NULL, ",");
-    char* h4= strtok(NULL, ",");
-    char* p1= strtok(NULL, ",");
-    char* p2= strtok(NULL, "\r\n"); // last one
-    printf("highhhh%s\n", c);
+  // Parse the PORT command
 
+
+
+// Extract c and h1 separately
+
+char* h2 = strtok(NULL, ",");
+char* h3 = strtok(NULL, ",");
+char* h4 = strtok(NULL, ",");
+char* p1 = strtok(NULL, ",");
+char* p2 = strtok(NULL, "\r\n");
+
+
+
+char c[5]; // create a new char array to hold the first 4 characters of d
+strncpy(c, d, 4); // copy the first 4 characters of d into c
+c[4] = '\0'; // terminate the string with a null character
+
+char* h1 = strtok(d+4, ","); // start tokenizing from the 5th character of d
+
+h2 = strtok(NULL, ",");
+h3 = strtok(NULL, ",");
+h4 = strtok(NULL, ",");
+p1 = strtok(NULL, ",");
+p2 = strtok(NULL, "\r\n");
+
+
+printf(" ");
 
     struct sockaddr_in client_data_addr;
 	bzero(&client_data_addr, sizeof(client_data_addr));
@@ -174,7 +192,7 @@ int handle_port(char d[])
       //port = (p1 * 256) + p2
 	//unsigned int len = sizeof(data_addr);
     
-    if(connect(data_fd,(struct sockaddr*)&client_data_addr,&client_len)<0)
+    if(connect(data_fd,(struct sockaddr*)&client_data_addr,sizeof(client_data_addr))<0)
 	{
 		perror("connect");
 		exit(-1);
@@ -227,66 +245,99 @@ int list(int client_fd, char data_command[] ){
 
 int stor(int client_fd, char *filename)
 {
-	int file_transfer = open(filename, O_CREAT | O_WRONLY, 0644);
-    if (file_transfer < 0) {
-        char message[256];
-        snprintf(message, sizeof(message), "Error with file\n");
-        send(client_fd, message, strlen(message), 0);
-        return 1;
-    }
+    int data_fd;
+    int pid = fork();
 
-    char buffer[256];
-
-    int byter;
-    int bytew;
-
-    byter = recv(client_fd, buffer, sizeof(buffer), 0);
-
-    while (byter > 0) {
-        bytew = write(file_transfer, buffer, byter);
-        if (bytew < 0) {
+    if (pid == 0) 
+    {
+        handle_port("");
+        int file_transfer = open(filename, O_CREAT | O_WRONLY, 0644);
+        if (file_transfer < 0) 
+        {
             char message[256];
-            snprintf(message, sizeof(message), "Error occurred\n");
+            snprintf(message, sizeof(message), "Error with file\n");
             send(client_fd, message, strlen(message), 0);
-            break;
+            exit(1);
         }
-    }
 
-    close(file_transfer); 
+        char buffer[256];
+
+        int byter;
+        int bytew;
+
+        byter = recv(data_fd, buffer, sizeof(buffer), 0);
+
+        while (byter > 0) 
+        {
+            bytew = write(file_transfer, buffer, byter);
+            if (bytew < 0) 
+            {
+                char message[256];
+                snprintf(message, sizeof(message), "Error occurred\n");
+                send(client_fd, message, strlen(message), 0);
+                break;
+            }
+            byter = recv(data_fd, buffer, sizeof(buffer), 0);
+        }
+
+        close(file_transfer);
+        close(data_fd);
+        exit(0);
+    } 
+
+    char message[256];
+    snprintf(message, sizeof(message), "200 PORT command successful.\n150 File status okay; about to open. data connection.\n");
+    send(client_fd, message, strlen(message), 0);
     return 0;
-
 }
 
 
 int retr(int client_fd, char *filename)
 {
+    int data_fd;
+    int pid = fork();
 
-    int file_transfer = open(filename, O_RDONLY);
-    if (file_transfer < 0) {
-        send(client_fd, "550 No such file or directory", strlen("550 No such file or directory"), 0);
-        return 1;
-    }
-
-    char buffer[256];
-
-    int byter;
-    int byte_download;
-
-    byter = read(file_transfer, buffer, sizeof(buffer));
-
-    while (byter > 0) {
-        byte_download = send(client_fd, buffer, byter, 0);
-        if (byte_download < 0) {
-            send(client_fd, "451 Requested action aborted: local error in processing", strlen("451 Requested action aborted: local error in processing"), 0);
-            break;
+    if (pid == 0) 
+    {
+        handle_port("");
+        int file_transfer = open(filename, O_RDONLY);
+        if (file_transfer < 0) 
+        {
+            send(client_fd, "550 No such file or directory", strlen("550 No such file or directory"), 0);
+            exit(1);
         }
-        byter = read(file_transfer, buffer, sizeof(buffer));
-    }
 
-    close(file_transfer); 
-    send(client_fd, "226 Closing data connection. Requested file action successful", strlen("226 Closing data connection. Requested file action successful"), 0);
+        char buffer[256];
+
+        int byter;
+        int bytew;
+
+        byter = read(file_transfer, buffer, sizeof(buffer));
+
+        while (byter > 0) 
+        {
+            bytew = send(data_fd, buffer, byter, 0);
+            if (bytew < 0) 
+            {
+                char message[256];
+                snprintf(message, sizeof(message), "Error occurred\n");
+                send(client_fd, message, strlen(message), 0);
+                break;
+            }
+            byter = read(file_transfer, buffer, sizeof(buffer));
+        }
+
+        close(file_transfer);
+        close(data_fd);
+        exit(0);
+    } 
+
+    char message[256];
+    snprintf(message, sizeof(message), "200 PORT command successful.\n150 File status okay; about to open. data connection.\n");
+    send(client_fd, message, strlen(message), 0);
     return 0;
 }
+
 
 int client_port;
 // commands from the client, tokenised reference: https://www.tutorialspoint.com/string-tokenisation-function-in-c
@@ -306,11 +357,14 @@ int commands(int client_sd)
 	        return 0;
 	    }
 	     
+	    printf("%s\n", data_command);
 	    // split between command and data using tokens
 	    char *command = strtok(data_command, " ");
 	    char *data = strtok(NULL, "\n");
 	    
-	    printf("%s\n", data_command);
+	    
+	    printf("%s\n", data);
+	    printf("%s\n", command);
 
 	    if (command == NULL) {
 	        send(client_sd, "500 Syntax error, command unrecognized.\n", strlen("500 Syntax error, command unrecognized.\n"), 0);
@@ -379,6 +433,7 @@ int commands(int client_sd)
 	    } else if (strcmp(command, "QUIT\r\n") == 0) {
 	            send(client_sd, "221 Service closing control connection.\n", strlen("221 Service closing control connection.\n"), 0);
 	            //close(client_sd);
+	            // Make sure that once the client quits the data for it gets reset
 	            return 1;
 	    
 	    
