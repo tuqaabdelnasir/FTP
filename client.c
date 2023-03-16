@@ -186,17 +186,20 @@ int main()
 					perror("data sock: ");
 					continue;
 				}
+				setsockopt(client_data_sock,SOL_SOCKET,SO_REUSEADDR,&value,sizeof(value));
+
 				struct sockaddr_in curr_addr;
 			    bzero(&curr_addr,sizeof(curr_addr));
-			    unsigned int len = sizeof(curr_addr);
+			    socklen_t len = sizeof(curr_addr);
 			    getsockname(server_sd,(struct sockaddr*)&curr_addr,&len);
-
-			    int client_port = (int)ntohs(curr_addr.sin_port)+channel++;
+			    int client_port = (int)ntohs(curr_addr.sin_port)+(channel++);
 			    char* client_ip = inet_ntoa(curr_addr.sin_addr);
+			    //getsockname(server_sd,(struct sockaddr*)&curr_addr,&len);
 
 			    //binddddddd
-			    if (bind(client_data_sock, (struct sockaddr *)&curr_addr, &len) < 0)
-				 {
+			    if (bind(client_data_sock,(struct sockaddr *)&curr_addr, sizeof(curr_addr)) < 0)
+				{	
+				 	printf("whyyyy\n");
                 	perror("bind");
                 	continue;
                 }
@@ -207,6 +210,8 @@ int main()
 	                close(client_data_sock);
 					continue;
 	            }
+	            send(server_sd,"listening..",4,0);
+
 			    
 			    //change dots to commas
 			    int i;
@@ -226,7 +231,7 @@ int main()
 			    int p2 = client_port%256;
 			    //concetenate it into client ip
 
-			    printf("cuur add sinport %d\n",curr_addr.sin_port);
+			    //printf("cuur add sinport %d\n",curr_addr.sin_port);
 			    printf("channel %d\n",channel);
 			    printf("client port %d\n",client_port);
 			    printf("hiiii %d\n",p1);
@@ -243,22 +248,18 @@ int main()
 			    //create socket for data exchange
 				
 				
-				setsockopt(client_data_sock,SOL_SOCKET,SO_REUSEADDR,&value,sizeof(value)); //&(int){1},sizeof(int)
-				//server details then bind then accept(using the server details)
+				 //&(int){1},sizeof(int)
+				//server details then bind then accept(using the server details
+				//SERVER DETAiLS
 				struct sockaddr_in data_addr;
 				bzero(&data_addr,sizeof(data_addr));
 				data_addr.sin_family = AF_INET;
 				data_addr.sin_port = htons(6000);
 				data_addr.sin_addr.s_addr = inet_addr("127.0.0.1"); //INADDR_ANY, INADDR_LOOP
-				unsigned int s_length=sizeof(data_addr);
+				socklen_t s_length=sizeof(data_addr);
+				
 
-
-
-				if (bind(client_data_sock, (struct sockaddr *)&data_addr, &s_length) < 0)
-				 {
-                	perror("bind");
-                	continue;
-                }
+				
 				//listen on the data exchange socket
 	            //if (listen(client_data_sock, 5) < 0)
 	            //{
@@ -269,6 +270,7 @@ int main()
 
 			    //recieve ack of PORT request
 			    recv(server_sd,buffer,sizeof(buffer),0);
+
 
 			    //server details here
 			    // dont need this
@@ -286,12 +288,134 @@ int main()
 				//fork here
 				int p_id=fork();
 				if (p_id==0)
-				{	
+				{
+
+					char* port;
+					char port_req[256];
+					char port_ack[256];
+					send(server_sd,"PORT",4,0);
+					int channel=1;
+					bzero(port_ack,sizeof(port_ack));
+					recv(server_sd,port_ack,sizeof(port_ack),0);
+					printf("%s\n", port_ack);
+					
+					//if (rec_bytes<=0)
+					//{
+					//	printf("Server has shutdown\n");
+						//return 0;
+					//}
+					int client_data_sock = socket(AF_INET,SOCK_STREAM,0);
+					if (client_data_sock<0)
+					{
+						perror("data sock: ");
+						continue;
+					}
+					setsockopt(client_data_sock,SOL_SOCKET,SO_REUSEADDR,&value,sizeof(value));
+
+					struct sockaddr_in curr_addr;
+				    bzero(&curr_addr,sizeof(curr_addr));
+				    socklen_t len = sizeof(curr_addr);
+				    getsockname(server_sd,(struct sockaddr*)&curr_addr,&len);
+				    int client_port = (int)ntohs(curr_addr.sin_port)+(channel++);
+				    char* client_ip = inet_ntoa(curr_addr.sin_addr);
+				    //getsockname(server_sd,(struct sockaddr*)&curr_addr,&len);
+
+				    //binddddddd
+				    if (bind(client_data_sock,(struct sockaddr *)&curr_addr, sizeof(curr_addr)) < 0)
+					{	
+					 	printf("whyyyy\n");
+	                	perror("bind");
+	                	continue;
+	                }
+
+	                if (listen(client_data_sock, 5) < 0)
+		            {
+		                perror("listen");
+		                close(client_data_sock);
+						continue;
+		            }
+		            //send(server_sd,"listening..",4,0);
+
+				    
+				    //change dots to commas
+				    int i;
+					int length = strlen(client_ip);
+					
+					for (i = 0; i < length; i++) 
+					{
+					    if (client_ip[i] == '.') 
+					    {
+					        client_ip[i] = ',';
+					        //i = length; // or `break;`
+					    }
+					}
+
+				    // convert port to p1 and p2
+				    int p1 = client_port/256;
+				    int p2 = client_port%256;
+				    //concetenate it into client ip
+
+				    //printf("cuur add sinport %d\n",curr_addr.sin_port);
+				    // printf("channel %d\n",channel);
+				    // printf("client port %d\n",client_port);
+				    // printf("hiiii %d\n",p1);
+				    // printf("byeee %d\n",p2);
+
+				    //SENDS THE PORT THING HEREE
+				    
+				    sprintf(port_req,"%s,%d,%d",client_ip,p1,p2);
+
+				    send(server_sd,port_req,sizeof(port_req),0);
+
+				    //bind to the client details then listen (declare the variables and everything)
+
+				    //create socket for data exchange
+					
+					
+					 //&(int){1},sizeof(int)
+					//server details then bind then accept(using the server details
+					//SERVER DETAiLS
+					struct sockaddr_in data_addr;
+					bzero(&data_addr,sizeof(data_addr));
+					data_addr.sin_family = AF_INET;
+					data_addr.sin_port = htons(6000);
+					data_addr.sin_addr.s_addr = inet_addr("127.0.0.1"); //INADDR_ANY, INADDR_LOOP
+					socklen_t s_length=sizeof(data_addr);
+					
+
+					
+					//listen on the data exchange socket
+		            //if (listen(client_data_sock, 5) < 0)
+		            //{
+		                //perror("listen");
+		                //close(client_data_sock);
+						//continue;
+		            //}
+
+				    //recieve ack of PORT request
+				    
+
+				    //server details here
+				    // dont need this
+					//  	struct sockaddr_in server_data_addr;
+					//     bzero(&server_data_addr, sizeof(server_data_addr));
+					//     server_data_addr.sin_family = AF_INET;
+					//     server_data_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
+					//     server_data_addr.sin_port = htons(6000);
+					//     unsigned int server_len = sizeof(server_data_addr);
+
+
+					//saccept here with the server address
+					int server_data_sock = accept(client_data_sock, (struct sockaddr *)&data_addr, &s_length);
+
+
 				
 					if (strncmp(buffer,"LIST",4)==0)
 					{
-						printf("%s\n","Sleepp" );
+						printf("Sleepp");
 						//send LIST on control socket
+						recv(server_sd,buffer,sizeof(buffer),0);
+
 						send(server_sd,buffer,sizeof(buffer),0);
 
 						//receive DATA OK
